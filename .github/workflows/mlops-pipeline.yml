@@ -7,6 +7,9 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   # ---------------------------------------------------------------
   # Job 1: Retrain the model and check if it beats the current best
