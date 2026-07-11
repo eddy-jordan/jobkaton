@@ -1,0 +1,8 @@
+Build the image:
+docker build -t pneumonia-api .
+
+Run the container:
+docker run -p 8000:8000 pneumonia-api
+
+And the test you used to verify it (worth saving too, since it's your proof it works):
+python test_predict.py chest_xray\test\PNEUMONIA\person94_bacteria_457.jpeg

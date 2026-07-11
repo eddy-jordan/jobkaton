@@ -1,0 +1,28 @@
+# Datasets -- too large for git, and not needed to review the code/notebooks
+# (notebook outputs already show the results; reviewers don't need to re-run training)
+# NOTE: credit_risk_dataset.csv is intentionally KEPT (not ignored) -- it's small (1.7MB)
+# and required by pipeline.py, train_experiments.ipynb, AND the GitHub Actions CI
+# pipeline (capstone/train.py reads it on every automated run).
+chest_xray/
+xray/
+
+# Large trained model files -- regenerable by running the notebooks;
+# Project 5's API only needs the smaller .onnx file below, not this one
+resnet50_pneumonia.pth
+
+# MLflow local tracking state -- regenerable, and not meaningful to browse raw
+# (dashboard screenshots already captured for the portfolio)
+mlruns/
+mlflow.db
+
+# Pipeline output -- regenerable by running pipeline.py
+processed/
+
+# Jupyter/Python housekeeping
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+
+# OS junk
+.DS_Store
+Thumbs.db

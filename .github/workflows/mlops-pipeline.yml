@@ -1,0 +1,88 @@
+name: MLOps Pipeline — Train, Evaluate, Deploy
+
+# Runs automatically every time code is pushed to main, and can also be
+# triggered manually from the Actions tab for testing.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  # ---------------------------------------------------------------
+  # Job 1: Retrain the model and check if it beats the current best
+  # ---------------------------------------------------------------
+  train-and-evaluate:
+    runs-on: ubuntu-latest
+    outputs:
+      model_improved: ${{ steps.train.outputs.model_improved }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install training dependencies
+        working-directory: capstone
+        run: pip install -r requirements-train.txt
+
+      - name: Train model and compare against baseline
+        id: train
+        working-directory: capstone
+        run: python train.py
+
+      - name: Upload model artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-artifacts
+          path: |
+            capstone/model.joblib
+            capstone/preprocessing_pipeline.joblib
+            capstone/metrics_current.json
+
+      - name: Commit updated baseline if model improved
+        if: steps.train.outputs.model_improved == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add capstone/metrics_baseline.json capstone/model.joblib capstone/preprocessing_pipeline.joblib
+          git commit -m "CI: promote improved model (automated)" || echo "Nothing to commit"
+          git push
+
+  # ---------------------------------------------------------------
+  # Job 2: Build the Docker image as a sanity check that it still
+  # builds correctly -- runs on every push, regardless of whether the
+  # model improved, since a broken Dockerfile should always be caught.
+  # ---------------------------------------------------------------
+  build-docker:
+    needs: train-and-evaluate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download model artifacts from the training job
+        uses: actions/download-artifact@v4
+        with:
+          name: model-artifacts
+          path: capstone
+
+      - name: Build Docker image
+        working-directory: capstone
+        run: docker build -t credit-risk-api .
+
+  # ---------------------------------------------------------------
+  # Job 3: Trigger a live redeploy on Render -- ONLY if the retrained
+  # model actually beat the previous best. This is what prevents a
+  # non-improving (or worse) model from ever reaching production.
+  # ---------------------------------------------------------------
+  deploy:
+    needs: [train-and-evaluate, build-docker]
+    if: needs.train-and-evaluate.outputs.model_improved == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy hook
+        run: curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
