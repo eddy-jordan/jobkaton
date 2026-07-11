@@ -4,7 +4,7 @@ name: MLOps Pipeline — Train, Evaluate, Deploy
 # triggered manually from the Actions tab for testing.
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   workflow_dispatch:
 
 jobs:
