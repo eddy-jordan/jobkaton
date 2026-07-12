@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Credit Risk Assessment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #eef1f6;
+    --paper-line: #d7dde8;
+    --ink: #0f1c2e;
+    --ink-soft: #4a5568;
+    --accent: #3457a6;
+    --accent-dark: #24406e;
+    --low-risk: #2f6d4f;
+    --low-risk-bg: #e5f0e9;
+    --high-risk: #a13d2f;
+    --high-risk-bg: #f5e6e3;
+    --card: #ffffff;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background-color: var(--paper);
+    background-image:
+      repeating-linear-gradient(var(--paper-line) 0 1px, transparent 1px 32px);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', sans-serif;
+    min-height: 100vh;
+    padding: 48px 20px 80px;
+  }
+
+  .wrap { max-width: 720px; margin: 0 auto; }
+
+  header { margin-bottom: 36px; }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent-dark);
+    margin: 0 0 10px;
+  }
+
+  h1 {
+    font-family: 'Source Serif 4', serif;
+    font-weight: 700;
+    font-size: clamp(28px, 5vw, 40px);
+    margin: 0 0 12px;
+    letter-spacing: -0.01em;
+  }
+
+  .sub {
+    color: var(--ink-soft);
+    font-size: 15px;
+    max-width: 52ch;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  form {
+    background: var(--card);
+    border: 1px solid var(--paper-line);
+    border-radius: 4px;
+    padding: 32px;
+    margin-top: 32px;
+    box-shadow: 0 1px 2px rgba(15, 28, 46, 0.04);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 24px;
+  }
+
+  @media (max-width: 560px) {
+    .grid { grid-template-columns: 1fr; }
+    form { padding: 24px 20px; }
+  }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+
+  label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  input, select {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 15px;
+    padding: 10px 12px;
+    border: 1px solid #c7cfdb;
+    border-radius: 3px;
+    background: #fcfcfd;
+    color: var(--ink);
+  }
+
+  input:focus, select:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-color: var(--accent);
+  }
+
+  .actions {
+    margin-top: 28px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  button {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    padding: 13px 26px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  button:hover { background: var(--accent-dark); }
+  button:disabled { background: #a9b4c7; cursor: default; }
+
+  .status {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  /* Result ledger */
+  #result {
+    margin-top: 28px;
+    display: none;
+  }
+
+  .ledger {
+    background: var(--card);
+    border: 1px solid var(--paper-line);
+    border-radius: 4px;
+    padding: 28px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ledger-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--paper-line);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+  }
+  .ledger-row:last-of-type { border-bottom: none; }
+  .ledger-row .k { color: var(--ink-soft); }
+  .ledger-row .v { font-weight: 500; }
+
+  .stamp {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: 18px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 10px 22px;
+    border: 3px solid currentColor;
+    border-radius: 4px;
+    transform: rotate(-3deg);
+    margin-bottom: 18px;
+  }
+
+  .stamp.low { color: var(--low-risk); background: var(--low-risk-bg); }
+  .stamp.high { color: var(--high-risk); background: var(--high-risk-bg); }
+
+  .meter {
+    height: 8px;
+    background: #e3e7ee;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 6px 0 4px;
+  }
+  .meter-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+
+  footer {
+    margin-top: 48px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    text-align: center;
+  }
+  footer a { color: var(--accent-dark); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <p class="eyebrow">Automated Underwriting — Demo</p>
+      <h1>Credit Risk Assessment</h1>
+      <p class="sub">Enter an applicant's financial profile. A Gradient Boosting model — retrained and redeployed automatically by CI/CD whenever it improves — estimates the likelihood of loan default.</p>
+    </header>
+
+    <form id="predict-form">
+      <div class="grid">
+        <div class="field">
+          <label for="person_age">Applicant age</label>
+          <input type="number" id="person_age" value="30" required>
+        </div>
+        <div class="field">
+          <label for="person_income">Annual income (USD)</label>
+          <input type="number" id="person_income" value="42000" required>
+        </div>
+        <div class="field">
+          <label for="person_home_ownership">Home ownership</label>
+          <select id="person_home_ownership">
+            <option value="RENT">Rent</option>
+            <option value="MORTGAGE" selected>Mortgage</option>
+            <option value="OWN">Own</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="person_emp_length">Employment length (yrs)</label>
+          <input type="number" step="0.1" id="person_emp_length" value="5" required>
+        </div>
+        <div class="field">
+          <label for="loan_intent">Loan purpose</label>
+          <select id="loan_intent">
+            <option value="PERSONAL">Personal</option>
+            <option value="EDUCATION">Education</option>
+            <option value="MEDICAL" selected>Medical</option>
+            <option value="VENTURE">Venture</option>
+            <option value="HOMEIMPROVEMENT">Home improvement</option>
+            <option value="DEBTCONSOLIDATION">Debt consolidation</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="loan_grade">Loan grade</label>
+          <select id="loan_grade">
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C" selected>C</option>
+            <option value="D">D</option>
+            <option value="E">E</option>
+            <option value="F">F</option>
+            <option value="G">G</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="loan_amnt">Loan amount (USD)</label>
+          <input type="number" id="loan_amnt" value="12000" required>
+        </div>
+        <div class="field">
+          <label for="loan_int_rate">Interest rate (%)</label>
+          <input type="number" step="0.01" id="loan_int_rate" value="14.2" required>
+        </div>
+        <div class="field">
+          <label for="loan_percent_income">Loan as % of income</label>
+          <input type="number" step="0.01" id="loan_percent_income" value="0.29" required>
+        </div>
+        <div class="field">
+          <label for="cb_person_default_on_file">Prior default on file?</label>
+          <select id="cb_person_default_on_file">
+            <option value="N" selected>No</option>
+            <option value="Y">Yes</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="cb_person_cred_hist_length">Credit history length (yrs)</label>
+          <input type="number" id="cb_person_cred_hist_length" value="5" required>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" id="submit-btn">Run assessment</button>
+        <span class="status" id="status"></span>
+      </div>
+    </form>
+
+    <div id="result">
+      <div class="ledger">
+        <div class="stamp" id="stamp">Low Risk</div>
+        <div class="ledger-row">
+          <span class="k">Default probability</span>
+          <span class="v" id="prob-value">0.00%</span>
+        </div>
+        <div class="meter"><div class="meter-fill" id="meter-fill"></div></div>
+      </div>
+    </div>
+
+    <footer>
+      API docs at <a href="/docs">/docs</a> · Part of a 7-project MLOps portfolio · <a href="https://github.com/eddy-jordan/jobkaton" target="_blank">source on GitHub</a>
+    </footer>
+  </div>
+
+<script>
+const form = document.getElementById('predict-form');
+const statusEl = document.getElementById('status');
+const submitBtn = document.getElementById('submit-btn');
+const resultEl = document.getElementById('result');
+const stampEl = document.getElementById('stamp');
+const probValueEl = document.getElementById('prob-value');
+const meterFillEl = document.getElementById('meter-fill');
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  submitBtn.disabled = true;
+  statusEl.textContent = 'Contacting model — first request may take up to 30s while the server wakes up…';
+  resultEl.style.display = 'none';
+
+  const payload = {
+    person_age: parseInt(document.getElementById('person_age').value, 10),
+    person_income: parseFloat(document.getElementById('person_income').value),
+    person_home_ownership: document.getElementById('person_home_ownership').value,
+    person_emp_length: parseFloat(document.getElementById('person_emp_length').value),
+    loan_intent: document.getElementById('loan_intent').value,
+    loan_grade: document.getElementById('loan_grade').value,
+    loan_amnt: parseFloat(document.getElementById('loan_amnt').value),
+    loan_int_rate: parseFloat(document.getElementById('loan_int_rate').value),
+    loan_percent_income: parseFloat(document.getElementById('loan_percent_income').value),
+    cb_person_default_on_file: document.getElementById('cb_person_default_on_file').value,
+    cb_person_cred_hist_length: parseInt(document.getElementById('cb_person_cred_hist_length').value, 10),
+  };
+
+  try {
+    const res = await fetch('/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Request failed (${res.status})`);
+    }
+
+    const data = await res.json();
+    const pct = (data.default_probability * 100).toFixed(1);
+    const isLow = data.prediction === 'LOW_RISK';
+
+    stampEl.textContent = isLow ? 'Low Risk' : 'Default Risk';
+    stampEl.className = 'stamp ' + (isLow ? 'low' : 'high');
+    probValueEl.textContent = pct + '%';
+    meterFillEl.style.width = pct + '%';
+    meterFillEl.style.backgroundColor = isLow ? 'var(--low-risk)' : 'var(--high-risk)';
+
+    resultEl.style.display = 'block';
+    statusEl.textContent = '';
+  } catch (err) {
+    statusEl.textContent = 'Error: ' + err.message;
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

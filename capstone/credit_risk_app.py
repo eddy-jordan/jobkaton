@@ -31,6 +31,7 @@ Example request:
 import joblib
 import pandas as pd
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 MODEL_PATH = "model.joblib"
@@ -65,9 +66,10 @@ class PredictResponse(BaseModel):
     default_probability: float
 
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 def root():
-    return {"message": "Credit Risk Prediction API is running. See /docs for usage."}
+    with open("static_ui.html") as f:
+        return f.read()
 
 
 @app.get("/health")
