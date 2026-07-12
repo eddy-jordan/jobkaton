@@ -1,0 +1,27 @@
+# Dependencies for the training/analysis notebooks and scripts:
+# Project 1 (pipeline.py), Project 2 (train_experiments.ipynb),
+# Project 3 (train_cv_model.ipynb), Project 4 (optimize_model.ipynb),
+# Project 6 (detect_drift.ipynb)
+#
+# Note: Project 5's API (app.py) and Project 7's capstone (capstone/) each
+# have their own separate, leaner requirements files -- kept independent so
+# their Docker images don't bundle unnecessary training-only packages.
+
+# Projects 1, 2 -- data pipeline + experiment tracking
+pandas==2.2.2
+scikit-learn==1.5.1
+joblib==1.4.2
+mlflow==2.16.0
+
+# Project 3, 4 -- deep learning + model optimization
+torch==2.4.1
+torchvision==0.19.1
+matplotlib==3.9.2
+onnx==1.16.2
+onnxruntime==1.19.2
+
+# Project 6 -- data drift monitoring
+evidently==0.7.21
+
+# Notebook execution
+jupyter==1.0.0
