@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir -r requirements-api.txt
 
 # Copy the app code and the model artifacts produced by train.py in CI
 COPY credit_risk_app.py .
+COPY static_ui.html .
 COPY model.joblib .
 COPY preprocessing_pipeline.joblib .
 
