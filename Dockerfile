@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Now copy the application code and the trained model
 COPY app.py .
+COPY static_ui.html .
 COPY resnet50_pneumonia.onnx .
 
 # Render (and most cloud platforms) inject the port to bind to via $PORT.

@@ -26,6 +26,7 @@ import io
 import numpy as np
 import onnxruntime as ort
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import HTMLResponse
 from PIL import Image
 from pydantic import BaseModel
 
@@ -77,9 +78,10 @@ def softmax(logits: np.ndarray) -> np.ndarray:
     return exp / exp.sum()
 
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 def root():
-    return {"message": "Pneumonia Detection API is running. See /docs for usage."}
+    with open("static_ui.html") as f:
+        return f.read()
 
 
 @app.get("/health")
