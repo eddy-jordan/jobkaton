@@ -162,6 +162,13 @@
   button:hover { background: var(--accent-dark); }
   button:disabled { background: #a9b4c7; cursor: default; }
 
+  button.secondary {
+    background: transparent;
+    color: var(--ink-soft);
+    border: 1px solid #c7cfdb;
+  }
+  button.secondary:hover { background: #f1f4f9; color: var(--ink); }
+
   .status {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 13px;
@@ -267,7 +274,8 @@
         </div>
         <div class="field">
           <label for="person_home_ownership">Home ownership</label>
-          <select id="person_home_ownership">
+          <select id="person_home_ownership" required>
+            <option value="" disabled>Select…</option>
             <option value="RENT">Rent</option>
             <option value="MORTGAGE" selected>Mortgage</option>
             <option value="OWN">Own</option>
@@ -280,7 +288,8 @@
         </div>
         <div class="field">
           <label for="loan_intent">Loan purpose</label>
-          <select id="loan_intent">
+          <select id="loan_intent" required>
+            <option value="" disabled>Select…</option>
             <option value="PERSONAL">Personal</option>
             <option value="EDUCATION">Education</option>
             <option value="MEDICAL" selected>Medical</option>
@@ -291,7 +300,8 @@
         </div>
         <div class="field">
           <label for="loan_grade">Loan grade</label>
-          <select id="loan_grade">
+          <select id="loan_grade" required>
+            <option value="" disabled>Select…</option>
             <option value="A">A</option>
             <option value="B">B</option>
             <option value="C" selected>C</option>
@@ -315,7 +325,8 @@
         </div>
         <div class="field">
           <label for="cb_person_default_on_file">Prior default on file?</label>
-          <select id="cb_person_default_on_file">
+          <select id="cb_person_default_on_file" required>
+            <option value="" disabled>Select…</option>
             <option value="N" selected>No</option>
             <option value="Y">Yes</option>
           </select>
@@ -328,6 +339,7 @@
 
       <div class="actions">
         <button type="submit" id="submit-btn">Run assessment</button>
+        <button type="button" id="reset-btn" class="secondary">Reset</button>
         <span class="status" id="status"></span>
       </div>
     </form>
@@ -356,6 +368,18 @@ const resultEl = document.getElementById('result');
 const stampEl = document.getElementById('stamp');
 const probValueEl = document.getElementById('prob-value');
 const meterFillEl = document.getElementById('meter-fill');
+
+const resetBtn = document.getElementById('reset-btn');
+
+function resetForm() {
+  form.reset();
+  document.querySelectorAll('#predict-form input').forEach(el => { el.value = ''; });
+  document.querySelectorAll('#predict-form select').forEach(el => { el.value = ''; });
+  resultEl.style.display = 'none';
+  statusEl.textContent = '';
+}
+
+resetBtn.addEventListener('click', resetForm);
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
