@@ -8,6 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  html { scroll-behavior: smooth; }
+
   :root {
     --paper: #eef1f6;
     --paper-line: #d7dde8;
@@ -24,6 +26,19 @@
 
   * { box-sizing: border-box; }
 
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .reveal.revealed { opacity: 1; transform: translateY(0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+
   body {
     margin: 0;
     background-color: var(--paper);
@@ -37,7 +52,11 @@
 
   .wrap { max-width: 720px; margin: 0 auto; }
 
-  header { margin-bottom: 36px; text-align: center; }
+  header {
+    margin-bottom: 36px;
+    text-align: center;
+    will-change: transform, opacity;
+  }
 
   .eyebrow {
     font-family: 'IBM Plex Mono', monospace;
@@ -290,6 +309,15 @@
   #result {
     margin-top: 28px;
     display: none;
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1), transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  #result.shown { opacity: 1; transform: translateY(0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    #result { transition: none; }
   }
 
   .ledger {
@@ -373,18 +401,18 @@
       </div>
     </header>
 
-    <div class="model-card">
+    <div class="model-card reveal">
       <div class="model-stats">
         <div class="stat">
-          <span class="stat-value">93.4%</span>
+          <span class="stat-value" data-target="93.4" data-suffix="%" data-decimals="1">0%</span>
           <span class="stat-label">Accuracy</span>
         </div>
         <div class="stat">
-          <span class="stat-value">0.949</span>
+          <span class="stat-value" data-target="0.949" data-decimals="3">0.000</span>
           <span class="stat-label">AUC-ROC</span>
         </div>
         <div class="stat">
-          <span class="stat-value">32,581</span>
+          <span class="stat-value" data-target="32581" data-format="int">0</span>
           <span class="stat-label">Training records</span>
         </div>
       </div>
@@ -397,7 +425,7 @@
       </div>
     </div>
 
-    <form id="predict-form">
+    <form id="predict-form" class="reveal">
       <div class="grid">
         <div class="field">
           <label for="person_age">Applicant age</label>
@@ -498,6 +526,67 @@
   </div>
 
 <script>
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------- Count-up animation for stat numbers ----------
+function animateCountUp(el) {
+  const target = parseFloat(el.dataset.target);
+  const decimals = parseInt(el.dataset.decimals || '0', 10);
+  const suffix = el.dataset.suffix || '';
+  const isInt = el.dataset.format === 'int';
+
+  if (prefersReducedMotion) {
+    el.textContent = isInt ? target.toLocaleString('en-US') + suffix : target.toFixed(decimals) + suffix;
+    return;
+  }
+
+  const duration = 1200;
+  const start = performance.now();
+
+  function frame(now) {
+    const elapsed = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - elapsed, 3); // ease-out cubic
+    const value = target * eased;
+    el.textContent = isInt
+      ? Math.round(value).toLocaleString('en-US') + suffix
+      : value.toFixed(decimals) + suffix;
+    if (elapsed < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+// ---------- Scroll-reveal for major sections ----------
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('revealed');
+      if (entry.target.classList.contains('model-card')) {
+        document.querySelectorAll('.stat-value[data-target]').forEach(animateCountUp);
+      }
+      revealObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.2 });
+
+document.querySelectorAll('.reveal').forEach((el) => revealObserver.observe(el));
+
+// ---------- Subtle header parallax on scroll ----------
+const headerEl = document.querySelector('header');
+let ticking = false;
+if (!prefersReducedMotion) {
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        const y = window.scrollY;
+        headerEl.style.transform = `translateY(${y * 0.18}px)`;
+        headerEl.style.opacity = Math.max(1 - y / 300, 0.3);
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive: true });
+}
+
 const form = document.getElementById('predict-form');
 const errorBanner = document.getElementById('error-banner');
 const submitBtn = document.getElementById('submit-btn');
@@ -531,6 +620,7 @@ function resetForm() {
   document.querySelectorAll('#predict-form input').forEach(el => { el.value = ''; });
   document.querySelectorAll('#predict-form select').forEach(el => { el.value = ''; });
   percentInput.value = '';
+  resultEl.classList.remove('shown');
   resultEl.style.display = 'none';
   errorBanner.style.display = 'none';
 }
@@ -542,6 +632,7 @@ form.addEventListener('submit', async (e) => {
   submitBtn.disabled = true;
   submitBtn.innerHTML = '<span class="spinner" aria-hidden="true"></span>Assessing…';
   errorBanner.style.display = 'none';
+  resultEl.classList.remove('shown');
   resultEl.style.display = 'none';
 
   const payload = {
@@ -582,6 +673,11 @@ form.addEventListener('submit', async (e) => {
     meterFillEl.style.backgroundColor = isLow ? 'var(--low-risk)' : 'var(--high-risk)';
 
     resultEl.style.display = 'block';
+    // Force a reflow so the transition actually fires (display:none -> block
+    // needs a paint in between before adding the class that animates it in)
+    void resultEl.offsetHeight;
+    requestAnimationFrame(() => resultEl.classList.add('shown'));
+    resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } catch (err) {
     errorBanner.textContent = 'Something went wrong: ' + err.message;
     errorBanner.style.display = 'block';
